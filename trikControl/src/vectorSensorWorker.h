@@ -19,6 +19,9 @@
 #include <QtCore/QVector>
 #include <QtCore/QTimer>
 #include <QtCore/QReadWriteLock>
+#include <QQuaternion>
+
+#include <trikKernel/timeVal.h>
 
 #include <trikHal/hardwareAbstractionInterface.h>
 
@@ -47,6 +50,8 @@ public:
 signals:
 	/// Emitted when new sensor reading is ready.
 	void newData(QVector<int> reading, const trikKernel::TimeVal &eventTime);
+
+	void inited();
 
 public slots:
 	/// Returns current raw reading of a sensor.
@@ -99,6 +104,10 @@ private:
     QVector<int> mBiasSum;
 
     int mBiasCounter;
+
+	QQuaternion mQ;
+
+	trikKernel::TimeVal mLastUpdate;
 };
 
 }

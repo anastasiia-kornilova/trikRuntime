@@ -15,6 +15,7 @@
 #include "src/vectorSensorWorker.h"
 
 #include <QsLog.h>
+#include <QVector3D>
 
 static const int maxEventDelay = 1000;
 static const int reopenDelay = 1000;
@@ -36,7 +37,7 @@ VectorSensorWorker::VectorSensorWorker(const QString &eventFile, DeviceState &st
 {
 	mState.start();
 
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < 9; i++) {
 		mReading << 0;
 	}
 
@@ -64,7 +65,6 @@ VectorSensorWorker::VectorSensorWorker(const QString &eventFile, DeviceState &st
 
 	connect(&mLastEventTimer, SIGNAL(timeout()), this, SLOT(onSensorHanged()));
 	connect(&mTryReopenTimer, SIGNAL(timeout()), this, SLOT(onTryReopen()));
-
 	connect(&mCalibrationTimer, SIGNAL(timeout()), this, SLOT(initBias()));
 
 	mEventFile->open();
@@ -116,10 +116,12 @@ void VectorSensorWorker::onNewEvent(int eventType, int code, int value, const tr
 		mReading.swap(mReadingUnsynced);
 
 		if (!mIsCalibrated) {
+
 			mBiasCounter++;
 			mBiasSum[0] += mReading[0];
 			mBiasSum[1] += mReading[1];
 			mBiasSum[2] += mReading[2];
+
 		}
 
 		emit newData(mReading, eventTime);
@@ -198,4 +200,6 @@ void VectorSensorWorker::initBias()
 	mBiasSum[0] = 0;
 	mBiasSum[1] = 0;
 	mBiasSum[2] = 0;
+
+	emit inited();
 }

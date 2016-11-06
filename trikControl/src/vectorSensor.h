@@ -16,6 +16,8 @@
 
 #include <QtCore/QScopedPointer>
 #include <QtCore/QThread>
+#include <QQuaternion>
+#include <trikKernel/timeVal.h>
 
 #include "vectorSensorInterface.h"
 #include "deviceState.h"
@@ -55,6 +57,16 @@ public slots:
 
 	bool isCalibrated() const override;
 
+private slots:
+
+	void countAngle(QVector<int> gyro, trikKernel::TimeVal t);
+
+	double getPitch(const QQuaternion &q) const;
+	double getRoll(const QQuaternion &q) const;
+	double getYaw(const QQuaternion &q) const;
+
+	void init();
+
 private:
 	/// Device state, shared with worker.
 	DeviceState mState;
@@ -62,7 +74,11 @@ private:
 	QScopedPointer<VectorSensorWorker> mVectorSensorWorker;
 	QThread mWorkerThread;
 
-	bool mCalibrated;
+	QQuaternion mQ;
+	trikKernel::TimeVal mLastUpdate;
+
+	const double mRadToDeg = 180.0 / M_PI;
+	const double mGyroRadToDeg = 0.07 / mRadToDeg;
 };
 
 }
