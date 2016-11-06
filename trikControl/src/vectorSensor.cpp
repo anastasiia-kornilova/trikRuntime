@@ -58,3 +58,13 @@ QVector<int> VectorSensor::read() const
 {
 	return mVectorSensorWorker->read();
 }
+
+void VectorSensor::calibrate(int msec)
+{
+	mVectorSensorWorker->calibrate(msec);
+}
+
+bool VectorSensor::isCalibrated() const
+{
+	return mVectorSensorWorker->isCalibrated();
+}

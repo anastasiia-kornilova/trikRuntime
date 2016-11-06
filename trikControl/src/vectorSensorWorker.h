@@ -55,6 +55,10 @@ public slots:
 	/// Shuts down sensor.
 	void deinitialize();
 
+    void calibrate(int msec);
+
+    bool isCalibrated() const;
+
 private slots:
 	/// Updates current reading when new value is ready in event file.
 	void onNewEvent(int eventType, int code, int value, const trikKernel::TimeVal &eventTime);
@@ -66,6 +70,8 @@ private slots:
 	/// Called when timeout for another try to reestablish connection with a device is expired. Tries to reopen
 	/// event file.
 	void onTryReopen();
+
+    void initBias();
 
 private:
 	/// Event file for that sensor.
@@ -85,6 +91,14 @@ private:
 
 	/// Timer that initiates attempts to reopen device file if there is a hangup.
 	QTimer mTryReopenTimer;
+
+    QTimer mCalibrationTimer;
+
+    bool mIsCalibrated;
+
+    QVector<int> mBiasSum;
+
+    int mBiasCounter;
 };
 
 }

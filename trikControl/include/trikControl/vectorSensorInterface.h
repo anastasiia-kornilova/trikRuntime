@@ -39,6 +39,10 @@ signals:
 public slots:
 	/// Returns current raw reading of a sensor.
 	virtual QVector<int> read() const = 0;
+
+	virtual void calibrate(int msec) = 0;
+
+	virtual bool isCalibrated() const = 0;
 };
 
 }

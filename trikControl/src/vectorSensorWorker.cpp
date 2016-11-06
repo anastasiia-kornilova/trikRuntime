@@ -18,6 +18,7 @@
 
 static const int maxEventDelay = 1000;
 static const int reopenDelay = 1000;
+static const int calibrationDelay = 1000;
 
 static const int evSyn = 0;
 static const int evAbs = 3;
@@ -35,8 +36,14 @@ VectorSensorWorker::VectorSensorWorker(const QString &eventFile, DeviceState &st
 {
 	mState.start();
 
-	mReading << 0 << 0 << 0;
+	for (int i = 0; i < 8; i++) {
+		mReading << 0;
+	}
+
 	mReadingUnsynced = mReading;
+	mBiasSum << 0 << 0 << 0;
+	mBiasCounter = 0;
+	mIsCalibrated = false;
 
 	moveToThread(&thread);
 
@@ -48,11 +55,17 @@ VectorSensorWorker::VectorSensorWorker(const QString &eventFile, DeviceState &st
 	mTryReopenTimer.setInterval(reopenDelay);
 	mTryReopenTimer.setSingleShot(false);
 
+	mCalibrationTimer.moveToThread(&thread);
+	mCalibrationTimer.setInterval(calibrationDelay);
+	mCalibrationTimer.setSingleShot(true);
+
 	connect(mEventFile.data(), SIGNAL(newEvent(int, int, int, trikKernel::TimeVal))
 			, this, SLOT(onNewEvent(int, int, int, trikKernel::TimeVal)));
 
 	connect(&mLastEventTimer, SIGNAL(timeout()), this, SLOT(onSensorHanged()));
 	connect(&mTryReopenTimer, SIGNAL(timeout()), this, SLOT(onTryReopen()));
+
+	connect(&mCalibrationTimer, SIGNAL(timeout()), this, SLOT(initBias()));
 
 	mEventFile->open();
 	thread.start();
@@ -84,27 +97,35 @@ void VectorSensorWorker::onNewEvent(int eventType, int code, int value, const tr
 	};
 
 	switch (eventType) {
-		case evAbs:
-			switch (code) {
-			case absX:
-				mReadingUnsynced[0] = value;
-				break;
-			case absY:
-				mReadingUnsynced[1] = value;
-				break;
-			case absZ:
-				mReadingUnsynced[2] = value;
-				break;
-			default:
-				reportError();
-			}
+	case evAbs:
+		switch (code) {
+		case absX:
+			mReadingUnsynced[0] = value;
 			break;
-		case evSyn:
-			mReading.swap(mReadingUnsynced);
-			emit newData(mReading, eventTime);
+		case absY:
+			mReadingUnsynced[1] = value;
+			break;
+		case absZ:
+			mReadingUnsynced[2] = value;
 			break;
 		default:
 			reportError();
+		}
+		break;
+	case evSyn:
+		mReading.swap(mReadingUnsynced);
+
+		if (!mIsCalibrated) {
+			mBiasCounter++;
+			mBiasSum[0] += mReading[0];
+			mBiasSum[1] += mReading[1];
+			mBiasSum[2] += mReading[2];
+		}
+
+		emit newData(mReading, eventTime);
+		break;
+	default:
+		reportError();
 	}
 }
 
@@ -122,6 +143,17 @@ void VectorSensorWorker::deinitialize()
 {
 	mLastEventTimer.stop();
 	mTryReopenTimer.stop();
+}
+
+void VectorSensorWorker::calibrate(int msec)
+{
+	mCalibrationTimer.start(msec);
+	mIsCalibrated = false;
+}
+
+bool VectorSensorWorker::isCalibrated() const
+{
+	return mIsCalibrated;
 }
 
 void VectorSensorWorker::onSensorHanged()
@@ -145,4 +177,25 @@ void VectorSensorWorker::onSensorHanged()
 void VectorSensorWorker::onTryReopen()
 {
 	onSensorHanged();
+}
+
+void VectorSensorWorker::initBias()
+{
+	mIsCalibrated = true;
+	mBiasSum[0] /= mBiasCounter;
+	mBiasSum[1] /= mBiasCounter;
+	mBiasSum[2] /= mBiasCounter;
+
+	mReading[3] = mBiasSum[0];
+	mReading[4] = mBiasSum[1];
+	mReading[5] = mBiasSum[2];
+
+	mReadingUnsynced[3] = mBiasSum[0];
+	mReadingUnsynced[4] = mBiasSum[1];
+	mReadingUnsynced[5] = mBiasSum[2];
+
+	mBiasCounter = 0;
+	mBiasSum[0] = 0;
+	mBiasSum[1] = 0;
+	mBiasSum[2] = 0;
 }

@@ -51,12 +51,18 @@ public:
 public slots:
 	QVector<int> read() const override;
 
+	void calibrate(int msec) override;
+
+	bool isCalibrated() const override;
+
 private:
 	/// Device state, shared with worker.
 	DeviceState mState;
 
 	QScopedPointer<VectorSensorWorker> mVectorSensorWorker;
 	QThread mWorkerThread;
+
+	bool mCalibrated;
 };
 
 }
