@@ -112,17 +112,21 @@ void GyroSensor::countTilt(QVector<int> gyroData, trikKernel::TimeVal t)
 		mLastUpdate = t;
 	} else {
 
-		mResult[0] = (gyroData[0] - mBias[0]) * GYRO_250DPS;
-		mResult[1] = (gyroData[1] - mBias[1]) * GYRO_250DPS;
-		mResult[2] = (gyroData[2] - mBias[2]) * GYRO_250DPS;
+		const auto r0 = (gyroData[0] - mBias[0]) * GYRO_250DPS;
+		const auto r1 = (gyroData[1] - mBias[1]) * GYRO_250DPS;
+		const auto r2 = (gyroData[2] - mBias[2]) * GYRO_250DPS;
+
+		mResult[0] = r0;
+		mResult[1] = r1;
+		mResult[2] = r2;
 		mResult[3] = t.packedUInt32();
 
 		constexpr auto deltaConst = pi() / 180 / 1000 / 1000000;
 		const auto dt = (t - mLastUpdate) * deltaConst;
 
-		const auto x = mResult[0] * dt;
-		const auto y = mResult[1] * dt;
-		const auto z = mResult[2] * dt;
+		const auto x = r0 * dt;
+		const auto y = r1 * dt;
+		const auto z = r2 * dt;
 
 		const auto c1 = std::cos(x / 2);
 		const auto s1 = std::sin(x / 2);
