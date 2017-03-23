@@ -14,6 +14,8 @@
 
 #include "gyroSensor.h"
 
+#include <qmath.h>
+
 #include <trikKernel/configurer.h>
 #include <trikKernel/timeVal.h>
 #include <QsLog.h>
@@ -117,7 +119,7 @@ bool GyroSensor::isCalibrated() const
 
 void GyroSensor::countTilt(QVector<int> gyroData, trikKernel::TimeVal t)
 {
-	mRawData[0] = gyroData[1];
+	mRawData[0] = -gyroData[1];
 	mRawData[1] = -gyroData[0];
 	mRawData[2] = gyroData[2];
 	mRawData[3] = t.packedUInt32();
@@ -144,12 +146,12 @@ void GyroSensor::countTilt(QVector<int> gyroData, trikKernel::TimeVal t)
 		const auto y = r1 * dt;
 		const auto z = r2 * dt;
 
-		const auto c1 = std::cos(x / 2);
-		const auto s1 = std::sin(x / 2);
+		const auto c1 = std::cos(z / 2);
+		const auto s1 = std::sin(z / 2);
 		const auto c2 = std::cos(y / 2);
 		const auto s2 = std::sin(y / 2);
-		const auto c3 = std::cos(z / 2);
-		const auto s3 = std::sin(z / 2);
+		const auto c3 = std::cos(x / 2);
+		const auto s3 = std::sin(x / 2);
 
 		QQuaternion deltaQ;
 		deltaQ.setScalar(c1 * c2 * c3 + s1 * s2 * s3);
@@ -162,10 +164,18 @@ void GyroSensor::countTilt(QVector<int> gyroData, trikKernel::TimeVal t)
 
 		mLastUpdate = t;
 
-		QQuaternion loc = mDeltaQ * mQ;
-		mResult[4] = getPitch<float>(loc) * RAD_TO_MDEG;
-		mResult[5] = getRoll<float>(loc) * RAD_TO_MDEG;
-		mResult[6] = getYaw<float>(loc) * RAD_TO_MDEG;
+//		QQuaternion loc = mQ;
+//		qDebug() << "q " << mQ.scalar() << ";" << mQ.x() << ";" << mQ.y() << ";" << mQ.z();
+
+		QVector3D euler = getEulerAngles();
+		mResult[4] = euler.x();
+		mResult[5] = euler.y();
+		mResult[6] = euler.z();
+
+//		mResult[4] = getPitch<float>(mQ) * RAD_TO_MDEG;
+//		mResult[5] = getRoll<float>(mQ) * RAD_TO_MDEG;
+//		mResult[6] = getYaw<float>(mQ) * RAD_TO_MDEG;
+//		qDebug() << "q" << mResult[4] << ";" << mResult[5] << ";" << mResult[6];
 
 		emit newData(mResult, t);
 	}
@@ -174,7 +184,7 @@ void GyroSensor::countTilt(QVector<int> gyroData, trikKernel::TimeVal t)
 void GyroSensor::sumBias(QVector<int> gyroData, trikKernel::TimeVal)
 {
 //	qDebug() << "b";
-	mGyroSum[0] += gyroData[1];
+	mGyroSum[0] -= gyroData[1];
 	mGyroSum[1] -= gyroData[0];
 	mGyroSum[2] += gyroData[2];
 	mGyroCounter++;
@@ -208,17 +218,20 @@ void GyroSensor::initParams()
 	}
 	mAccelerometerCounter = 0;
 
-	QVector3D acc(mAccelerometerVector[0], mAccelerometerVector[1], -mAccelerometerVector[2]);
+	QVector3D acc(mAccelerometerVector[0], mAccelerometerVector[1], mAccelerometerVector[2]);
 	acc.normalize();
+	qDebug() << acc.x() << ";" << acc.y() << ";" << acc.z();
 
-	QVector3D gravity(0, 0, -1);
-	QVector3D half = acc + gravity;
-	half.normalize();
+	QVector3D gravity(0, 0, 1);
 
-	auto dot = QVector3D::dotProduct(acc, half);
-	QVector3D cross = QVector3D::crossProduct(half, acc);
-
-	mDeltaQ = QQuaternion::fromAxisAndAngle(cross, acos(dot));
+	float dot = QVector3D::dotProduct(acc, gravity);
+	QVector3D cross = QVector3D::crossProduct(acc, gravity);
+//	qDebug() << cross.x() << ";" << cross.y() << ";" << cross.z();
+//	qDebug() << dot;
+	double t = sqrt(2) / 2;
+	mQ = QQuaternion(t, 0, -t, 0);
+//	mQ.normalize();
+	qDebug() << mQ.scalar() << ";" << mQ.x() << ";" << mQ.y() << ";" << mQ.z();
 }
 
 void GyroSensor::sumAccelerometer(const QVector<int> &accelerometerData, const trikKernel::TimeVal &)
@@ -228,4 +241,60 @@ void GyroSensor::sumAccelerometer(const QVector<int> &accelerometerData, const t
 	mAccelerometerSum[1] += accelerometerData[1];
 	mAccelerometerSum[2] += accelerometerData[2];
 	mAccelerometerCounter++;
+}
+
+QVector3D GyroSensor::getEulerAngles()
+{
+	float pitch = 0.0;
+	float roll = 0.0;
+	float yaw = 0.0;
+
+	float xp = mQ.x();
+	float yp = mQ.y();
+	float zp = mQ.z();
+	float wp = mQ.scalar();
+
+	float xx = xp * xp;
+	float xy = xp * yp;
+	float xz = xp * zp;
+	float xw = xp * wp;
+	float yy = yp * yp;
+	float yz = yp * zp;
+	float yw = yp * wp;
+	float zz = zp * zp;
+	float zw = zp * wp;
+
+	const float lengthSquared = xx + yy + zz + wp * wp;
+	if (!qFuzzyIsNull(lengthSquared - 1.0f) && !qFuzzyIsNull(lengthSquared)) {
+		   xx /= lengthSquared;
+		   xy /= lengthSquared; // same as (xp / length) * (yp / length)
+		   xz /= lengthSquared;
+		   xw /= lengthSquared;
+		   yy /= lengthSquared;
+		   yz /= lengthSquared;
+		   yw /= lengthSquared;
+		   zz /= lengthSquared;
+		   zw /= lengthSquared;
+	   }
+
+	   pitch = std::asin(-2.0f * (yz - xw));
+	   if (pitch < M_PI_2) {
+		   if (pitch > -M_PI_2) {
+			   yaw = std::atan2(2.0f * (xz + yw), 1.0f - 2.0f * (xx + yy));
+			   roll = std::atan2(2.0f * (xy + zw), 1.0f - 2.0f * (xx + zz));
+		   } else {
+			   // not a unique solution
+			   roll = 0.0f;
+			   yaw = -std::atan2(-2.0f * (xy - zw), 1.0f - 2.0f * (yy + zz));
+		   }
+	   } else {
+		   // not a unique solution
+		   roll = 0.0f;
+		   yaw = std::atan2(-2.0f * (xy - zw), 1.0f - 2.0f * (yy + zz));
+	   }
+
+	   pitch = pitch * RAD_TO_MDEG;
+	   yaw = yaw * RAD_TO_MDEG;
+	   roll = roll * RAD_TO_MDEG;
+	   return QVector3D(pitch, roll, yaw);
 }
