@@ -50,8 +50,6 @@ GyroSensor::GyroSensor(const QString &deviceName, const trikKernel::Configurer &
 	mAccelerometerSum.resize(3);
 	mAccelerometerCounter = 0;
 
-	qDebug() << "constr";
-
 	mCalibrationTimer.moveToThread(&mWorkerThread);
 	mCalibrationTimer.setSingleShot(true);
 
@@ -61,7 +59,7 @@ GyroSensor::GyroSensor(const QString &deviceName, const trikKernel::Configurer &
 		connect(mVectorSensorWorker.data(), SIGNAL(newData(QVector<int>,trikKernel::TimeVal))
 				, this, SLOT(countTilt(QVector<int>,trikKernel::TimeVal)));
 
-		connect(&mCalibrationTimer, SIGNAL(timeout()), this, SLOT(initParams()));
+		connect(&mCalibrationTimer, SIGNAL(timeout()), this, SLOT(initParameters()));
 
 		QLOG_INFO() << "Starting VectorSensor worker thread" << &mWorkerThread;
 
@@ -99,7 +97,7 @@ void GyroSensor::calibrate(int msec)
 	mCalibrationTimer.start(msec);
 
 	connect(mVectorSensorWorker.data(), SIGNAL(newData(QVector<int>,trikKernel::TimeVal))
-			, this, SLOT(sumBias(QVector<int>,trikKernel::TimeVal)));
+			, this, SLOT(sumGyroscope(QVector<int>,trikKernel::TimeVal)));
 
 	connect(mAccelerometer, SIGNAL(newData(QVector<int>,trikKernel::TimeVal))
 			, this, SLOT(sumAccelerometer(QVector<int>,trikKernel::TimeVal)));
@@ -159,36 +157,19 @@ void GyroSensor::countTilt(QVector<int> gyroData, trikKernel::TimeVal t)
 
 		mLastUpdate = t;
 
-//		QQuaternion loc = mQ;
-//		qDebug() << "q " << mQ.scalar() << ";" << mQ.x() << ";" << mQ.y() << ";" << mQ.z();
-
-		QVector3D euler = getEulerAngles();
+		const QVector3D euler = getEulerAngles();
 		mResult[4] = euler.x();
 		mResult[5] = euler.y();
 		mResult[6] = euler.z();
-
-//		mResult[4] = getPitch<float>(mQ) * RAD_TO_MDEG;
-//		mResult[5] = getRoll<float>(mQ) * RAD_TO_MDEG;
-//		mResult[6] = getYaw<float>(mQ) * RAD_TO_MDEG;
-//		qDebug() << "q" << mResult[4] << ";" << mResult[5] << ";" << mResult[6];
 
 		emit newData(mResult, t);
 	}
 }
 
-void GyroSensor::sumBias(QVector<int> gyroData, trikKernel::TimeVal)
-{
-//	qDebug() << "b";
-	mGyroSum[0] -= gyroData[1];
-	mGyroSum[1] -= gyroData[0];
-	mGyroSum[2] += gyroData[2];
-	mGyroCounter++;
-}
-
-void GyroSensor::initParams()
+void GyroSensor::initParameters	()
 {
 	disconnect(mVectorSensorWorker.data(), SIGNAL(newData(QVector<int>,trikKernel::TimeVal))
-			, this, SLOT(sumBias(QVector<int>,trikKernel::TimeVal)));
+			, this, SLOT(sumGyroscope(QVector<int>,trikKernel::TimeVal)));
 
 	if (mGyroCounter != 0) {
 		for (int i = 0; i < 3; i++) {
@@ -211,7 +192,7 @@ void GyroSensor::initParams()
 
 	mIsCalibrated = true;
 
-	QVector3D acc(-mAccelerometerVector[0], mAccelerometerVector[1], mAccelerometerVector[2]);
+	QVector3D acc(-mAccelerometerVector[0], -mAccelerometerVector[1], mAccelerometerVector[2]);
 	acc.normalize();
 
 	QVector3D gravity(0, 0, 1);
@@ -230,38 +211,46 @@ void GyroSensor::sumAccelerometer(const QVector<int> &accelerometerData, const t
 	mAccelerometerCounter++;
 }
 
+void GyroSensor::sumGyroscope(const QVector<int> &gyroData, const trikKernel::TimeVal &)
+{
+	mGyroSum[0] -= gyroData[1];
+	mGyroSum[1] -= gyroData[0];
+	mGyroSum[2] += gyroData[2];
+	mGyroCounter++;
+}
+
 QVector3D GyroSensor::getEulerAngles()
 {
 	float pitch = 0.0;
 	float roll = 0.0;
 	float yaw = 0.0;
 
-	float xp = mQ.x();
-	float yp = mQ.y();
-	float zp = mQ.z();
-	float wp = mQ.scalar();
+	const float x = mQ.x();
+	const float y = mQ.y();
+	const float z = mQ.z();
+	const float w = mQ.scalar();
 
-	float xx = xp * xp;
-	float xy = xp * yp;
-	float xz = xp * zp;
-	float xw = xp * wp;
-	float yy = yp * yp;
-	float yz = yp * zp;
-	float yw = yp * wp;
-	float zz = zp * zp;
-	float zw = zp * wp;
+	const float xx = x * x;
+	const float xy = x * y;
+	const float xz = x * z;
+	const float xw = x * w;
+	const float yy = y * y;
+	const float yz = y * z;
+	const float yw = y * w;
+	const float zz = z * z;
+	const float zw = z * w;
 
-	const float lengthSquared = xx + yy + zz + wp * wp;
-	if (!qFuzzyIsNull(lengthSquared - 1.0f) && !qFuzzyIsNull(lengthSquared)) {
-		   xx /= lengthSquared;
-		   xy /= lengthSquared; // same as (xp / length) * (yp / length)
-		   xz /= lengthSquared;
-		   xw /= lengthSquared;
-		   yy /= lengthSquared;
-		   yz /= lengthSquared;
-		   yw /= lengthSquared;
-		   zz /= lengthSquared;
-		   zw /= lengthSquared;
+	const float squaredLength = xx + yy + zz + w * w;
+	if (!qFuzzyIsNull(squaredLength - 1.0f) && !qFuzzyIsNull(squaredLength)) {
+		   xx /= squaredLength;
+		   xy /= squaredLength;
+		   xz /= squaredLength;
+		   xw /= squaredLength;
+		   yy /= squaredLength;
+		   yz /= squaredLength;
+		   yw /= squaredLength;
+		   zz /= squaredLength;
+		   zw /= squaredLength;
 	   }
 
 	   pitch = std::asin(-2.0f * (yz - xw));
