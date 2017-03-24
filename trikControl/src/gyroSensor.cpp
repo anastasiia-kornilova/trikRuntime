@@ -189,7 +189,7 @@ void GyroSensor::initParameters()
 
 	mIsCalibrated = true;
 
-	QVector3D acc(mAccelerometerVector[0], mAccelerometerVector[1], mAccelerometerVector[2]);
+	QVector3D acc(mAccelerometerVector[0], -mAccelerometerVector[1], mAccelerometerVector[2]);
 	acc.normalize();
 
 	QVector3D gravity(0, 0, 1);
