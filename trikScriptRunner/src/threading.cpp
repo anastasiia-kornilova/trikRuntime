@@ -45,7 +45,7 @@ void Threading::startMainThread(const QString &script)
 	const QRegExp mainRegexp("(.*var main\\s*=\\s*\\w*\\s*function\\(.*\\).*)|(.*function\\s+%1\\s*\\(.*\\).*)");
 	const bool needCallMain = mainRegexp.exactMatch(script) && !script.trimmed().endsWith("main();");
 
-	startThread("main", mScriptWorker->createScriptEngine(), needCallMain ? script + "\nmain();" : script);
+	startThread(mMainThreadId, mScriptWorker->createScriptEngine(), needCallMain ? script + "\nmain();" : script);
 }
 
 void Threading::startThread(const QScriptValue &threadId, const QScriptValue &function)

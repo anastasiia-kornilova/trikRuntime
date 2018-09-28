@@ -105,6 +105,8 @@ private:
 	ScriptEngineWorker * const mScriptWorker;  // Doesn't have ownership.
 	ScriptExecutionControl &mScriptControl;
 	QString mScript;
+
+	static constexpr QString mMainThreadId = "main";
 };
 
 }
