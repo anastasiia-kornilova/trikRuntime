@@ -106,7 +106,7 @@ private:
 	ScriptExecutionControl &mScriptControl;
 	QString mScript;
 
-	static constexpr QString mMainThreadId = "main";
+	const QString mMainThreadId = "main";
 };
 
 }

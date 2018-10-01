@@ -390,6 +390,7 @@ static void timeValFromScriptValue(const QScriptValue &object, trikKernel::TimeV
 QScriptEngine * ScriptEngineWorker::createScriptEngine(bool supportThreads)
 {
 	QScriptEngine *engine = new QScriptEngine();
+	qDebug() << engine;
 	QLOG_INFO() << "New script engine" << engine << ", thread:" << QThread::currentThread();
 
 
