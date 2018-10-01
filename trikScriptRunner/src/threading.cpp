@@ -19,7 +19,6 @@
 #include "src/scriptThread.h"
 
 #include <QsLog.h>
-#include <QScriptValueIterator>
 
 using namespace trikScriptRunner;
 
@@ -88,6 +87,11 @@ void Threading::startThread(const QString &threadId, QScriptEngine *engine, cons
 	ScriptThread * const thread = new ScriptThread(*this, threadId, engine, script);
 	connect(&mScriptControl, SIGNAL(quitSignal()), thread, SIGNAL(stopRunning()), Qt::DirectConnection);
 
+	if (threadId == mMainThreadId) {
+		qDebug() << "Connection for main thread";
+		connect(this, SIGNAL(getVariables(QString)), thread, SLOT(processVariables(QString)), Qt::DirectConnection);
+	}
+
 	mThreads[threadId] = thread;
 	mFinishedThreads.remove(threadId);
 	mThreadsMutex.unlock();
@@ -103,14 +107,9 @@ void Threading::startThread(const QString &threadId, QScriptEngine *engine, cons
 	}
 
 	for(int cnt = 0; ;++cnt) {
-		QScriptValue websv = engine->globalObject().property("web");
 		QThread::msleep(1000);
+		emit getVariables("web");
 		qDebug() << cnt;
-		QScriptValueIterator it(websv);
-		while (it.hasNext()) {
-			it.next();
-			qDebug() << it.name() << ": " << it.value().toString();
-		}
 	}
 
 	QLOG_INFO() << "Threading: started thread" << threadId << "with engine" << engine << ", thread object" << thread;

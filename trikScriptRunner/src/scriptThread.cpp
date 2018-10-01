@@ -19,6 +19,7 @@
 
 #include "threading.h"
 #include <QsLog.h>
+#include <QScriptValueIterator>
 
 using namespace trikScriptRunner;
 
@@ -77,4 +78,14 @@ QString ScriptThread::error() const
 bool ScriptThread::isEvaluating() const
 {
 	return mEngine->isEvaluating();
+}
+
+void ScriptThread::processVariables(const QString &contextName)
+{
+	QScriptValue websv = mEngine->globalObject().property(contextName);
+	QScriptValueIterator it(websv);
+	while (it.hasNext()) {
+		it.next();
+		qDebug() << it.name() << ": " << it.value().toString();
+	}
 }

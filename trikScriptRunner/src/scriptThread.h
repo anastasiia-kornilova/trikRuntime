@@ -51,6 +51,9 @@ signals:
 	/// Emitted when event loop must be stopped.
 	void stopRunning();
 
+public slots:
+	void processVariables(const QString &contextName);
+
 protected:
 	void run() override;
 
