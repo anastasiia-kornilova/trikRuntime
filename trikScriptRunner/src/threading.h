@@ -79,6 +79,9 @@ signals:
 	/// Signals that all threads have finished.
 	void finished();
 
+public slots:
+	void printVariables();
+
 private:
 	/// Starts a thread with given threadId
 	/// @param engine - script engine that will do the work; it will be owned by a newly created thread
@@ -109,6 +112,9 @@ private:
 	ScriptEngineWorker * const mScriptWorker;  // Doesn't have ownership.
 	ScriptExecutionControl &mScriptControl;
 	QString mScript;
+
+	QScriptEngine *mMainScriptEngine;
+	const QString mMainThreadName = "main";
 };
 
 }

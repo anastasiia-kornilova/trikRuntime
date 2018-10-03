@@ -206,6 +206,7 @@ ScriptEngineWorker::ScriptEngineWorker(trikControl::BrickInterface &brick
 	, mState(ready)
 {
 	connect(&mScriptControl, SIGNAL(quitSignal()), this, SLOT(onScriptRequestingToQuit()));
+	connect(this, SIGNAL(getVariables()), &mThreading, SLOT(printVariables()));
 
 	registerUserFunction("print", print);
 	registerUserFunction("timeInterval", timeInterval);

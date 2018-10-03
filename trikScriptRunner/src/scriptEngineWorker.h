@@ -88,6 +88,8 @@ signals:
 	/// @param scriptId - unique identifier assigned to a newly started script.
 	void startedScript(int scriptId);
 
+	void getVariables();
+
 public slots:
 	/// Starts script evaluation, emits startedScript() signal and returns. Script will be executed asynchronously.
 	/// completed() signal is emitted upon script abortion or completion.
