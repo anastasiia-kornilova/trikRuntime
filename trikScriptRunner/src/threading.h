@@ -80,7 +80,7 @@ signals:
 	void finished();
 
 public slots:
-	void printVariables();
+	void printVariables(const QString &propertyName);
 
 private:
 	/// Starts a thread with given threadId

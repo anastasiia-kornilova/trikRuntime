@@ -317,11 +317,11 @@ bool Threading::inEventDrivenMode() const
 	return mScriptControl.isInEventDrivenMode();
 }
 
-void Threading::printVariables()
+void Threading::printVariables(const QString &propertyName)
 {
 	// Lock must be here
 	if (mMainScriptEngine != nullptr) {
-		QScriptValueIterator it(mMainScriptEngine->globalObject().property("web"));
+		QScriptValueIterator it(mMainScriptEngine->globalObject().property(propertyName));
 		while (it.hasNext()) {
 			it.next();
 			qDebug() << it.name() << " : " << it.value().toString();

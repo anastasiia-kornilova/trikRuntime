@@ -88,7 +88,7 @@ signals:
 	/// @param scriptId - unique identifier assigned to a newly started script.
 	void startedScript(int scriptId);
 
-	void getVariables();
+	void getVariables(const QString &propertyName);
 
 public slots:
 	/// Starts script evaluation, emits startedScript() signal and returns. Script will be executed asynchronously.

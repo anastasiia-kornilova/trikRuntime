@@ -9,7 +9,7 @@ public:
 	TrikVariablesServer();
 
 signals:
-	void getVariables();
+	void getVariables(const QString &propertyName);
 
 private slots:
 

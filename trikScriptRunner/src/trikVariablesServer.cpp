@@ -12,11 +12,6 @@ TrikVariablesServer::TrikVariablesServer() :
 	connect(mTcpServer, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
 	bool res = mTcpServer->listen(QHostAddress::LocalHost, 10000);
 	qDebug() << res;
-
-	QTimer *mTimer = new QTimer();
-	mTimer->setInterval(500);
-	connect(mTimer, SIGNAL(timeout()), this, SIGNAL(getVariables()));
-	mTimer->start();
 }
 
 void TrikVariablesServer::onNewConnection()
@@ -37,5 +32,5 @@ void TrikVariablesServer::readData()
 	}
 
 	QString resultString = list.join("").remove(QRegExp("[\\n\\t\\r]"));
-	qDebug() << resultString;
+	emit getVariables(resultString);
 }
