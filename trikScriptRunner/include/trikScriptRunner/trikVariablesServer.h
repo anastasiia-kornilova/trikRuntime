@@ -11,6 +11,10 @@ public:
 signals:
 	void getVariables(const QString &propertyName);
 
+public slots:
+
+	void onVariablesReady(const QJsonObject &json);
+
 private slots:
 
 	void onNewConnection();

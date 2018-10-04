@@ -79,6 +79,8 @@ signals:
 	/// Signals that all threads have finished.
 	void finished();
 
+	void variablesReady(const QJsonObject &data);
+
 public slots:
 	void printVariables(const QString &propertyName);
 

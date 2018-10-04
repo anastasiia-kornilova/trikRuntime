@@ -90,6 +90,8 @@ signals:
 
 	void getVariables(const QString &propertyName);
 
+	void variablesReady(const QJsonObject &data);
+
 public slots:
 	/// Starts script evaluation, emits startedScript() signal and returns. Script will be executed asynchronously.
 	/// completed() signal is emitted upon script abortion or completion.

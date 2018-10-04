@@ -16,6 +16,7 @@
 
 #include <QtCore/QEventLoop>
 #include <QtScript/QScriptValueIterator>
+#include <QJsonObject>
 
 #include "scriptEngineWorker.h"
 #include "src/utils.h"
@@ -322,9 +323,11 @@ void Threading::printVariables(const QString &propertyName)
 	// Lock must be here
 	if (mMainScriptEngine != nullptr) {
 		QScriptValueIterator it(mMainScriptEngine->globalObject().property(propertyName));
+		QJsonObject json;
 		while (it.hasNext()) {
 			it.next();
-			qDebug() << it.name() << " : " << it.value().toString();
+			json[it.name()] = it.value().toString();
 		}
+		emit variablesReady(json);
 	}
 }
