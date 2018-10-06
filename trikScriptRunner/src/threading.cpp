@@ -92,6 +92,10 @@ void Threading::startThread(const QString &threadId, QScriptEngine *engine, cons
 	QLOG_INFO() << "Starting new thread" << threadId << "with engine" << engine;
 	ScriptThread * const thread = new ScriptThread(*this, threadId, engine, script);
 	connect(&mScriptControl, SIGNAL(quitSignal()), thread, SIGNAL(stopRunning()), Qt::DirectConnection);
+	if (threadId == mMainThreadName) {
+		connect(this, SIGNAL(getVariables(QString)), thread, SLOT(printVariables(QString)));
+		connect(thread, SIGNAL(variablesReady(QJsonObject)), this, SIGNAL(variablesReady(QJsonObject)));
+	}
 	mThreads[threadId] = thread;
 	mFinishedThreads.remove(threadId);
 	mThreadsMutex.unlock();
@@ -316,18 +320,4 @@ bool Threading::tryLockReset()
 bool Threading::inEventDrivenMode() const
 {
 	return mScriptControl.isInEventDrivenMode();
-}
-
-void Threading::printVariables(const QString &propertyName)
-{
-	// Lock must be here
-	if (mMainScriptEngine != nullptr) {
-		QScriptValueIterator it(mMainScriptEngine->globalObject().property(propertyName));
-		QJsonObject json;
-		while (it.hasNext()) {
-			it.next();
-			json[it.name()] = it.value().toString();
-		}
-		emit variablesReady(json);
-	}
 }

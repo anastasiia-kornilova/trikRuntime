@@ -81,8 +81,7 @@ signals:
 
 	void variablesReady(const QJsonObject &data);
 
-public slots:
-	void printVariables(const QString &propertyName);
+	void getVariables(const QString &propertyName);
 
 private:
 	/// Starts a thread with given threadId

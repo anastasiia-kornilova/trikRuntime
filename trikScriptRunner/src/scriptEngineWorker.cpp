@@ -206,7 +206,7 @@ ScriptEngineWorker::ScriptEngineWorker(trikControl::BrickInterface &brick
 	, mState(ready)
 {
 	connect(&mScriptControl, SIGNAL(quitSignal()), this, SLOT(onScriptRequestingToQuit()));
-	connect(this, SIGNAL(getVariables(QString)), &mThreading, SLOT(printVariables(QString)));
+	connect(this, SIGNAL(getVariables(QString)), &mThreading, SIGNAL(getVariables(QString)));
 	connect(&mThreading, SIGNAL(variablesReady(QJsonObject)), this, SIGNAL(variablesReady(QJsonObject)));
 
 	registerUserFunction("print", print);

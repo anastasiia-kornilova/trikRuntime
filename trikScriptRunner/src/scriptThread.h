@@ -51,6 +51,11 @@ signals:
 	/// Emitted when event loop must be stopped.
 	void stopRunning();
 
+	void variablesReady(const QJsonObject &json);
+
+public slots:
+	void printVariables(const QString &propertyName);
+
 protected:
 	void run() override;
 

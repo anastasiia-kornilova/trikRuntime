@@ -13,6 +13,7 @@ TrikVariablesServer::TrikVariablesServer() :
 	connect(mTcpServer, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
 	bool res = mTcpServer->listen(QHostAddress::LocalHost, 10000);
 	qDebug() << res;
+	qDebug() << "created server";
 }
 
 void TrikVariablesServer::onVariablesReady(const QJsonObject &json)
@@ -44,6 +45,7 @@ void TrikVariablesServer::onNewConnection()
 
 void TrikVariablesServer::readData()
 {
+	qDebug() << "new data";
 	QStringList list;
 	while (mCurrentConnection->canReadLine())
 	{
