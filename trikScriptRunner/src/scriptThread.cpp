@@ -81,7 +81,7 @@ bool ScriptThread::isEvaluating() const
 	return mEngine->isEvaluating();
 }
 
-void ScriptThread::printVariables(const QString &propertyName)
+void ScriptThread::onGetVariables(const QString &propertyName)
 {
 	if (mEngine != nullptr) {
 		QScriptValueIterator it(mEngine->globalObject().property(propertyName));

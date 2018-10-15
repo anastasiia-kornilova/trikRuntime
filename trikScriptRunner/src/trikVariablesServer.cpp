@@ -1,51 +1,49 @@
 #include "trikVariablesServer.h"
 
-#include <QTimer>
-#include <QDebug>
+#include <QtCore/QJsonDocument>
+#include <QtCore/QRegExp>
 #include <QtNetwork/QTcpSocket>
-#include <QDataStream>
-#include <QRegExp>
-#include <QJsonDocument>
+
+using namespace trikScriptRunner;
 
 TrikVariablesServer::TrikVariablesServer() :
 	mTcpServer(new QTcpServer(this))
 {
-	connect(mTcpServer, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
-	bool res = mTcpServer->listen(QHostAddress::LocalHost, 10000);
-	qDebug() << res;
-	qDebug() << "created server";
+	connect(mTcpServer.data(), SIGNAL(newConnection()), this, SLOT(onNewConnection()));
+	mTcpServer->listen(QHostAddress::LocalHost, port);
 }
 
-void TrikVariablesServer::onVariablesReady(const QJsonObject &json)
+void TrikVariablesServer::sendHTTPResponse(const QJsonObject &json)
 {
-	QJsonDocument doc(json);
-	QByteArray bytes = doc.toJson();
+	QByteArray jsonBytes = QJsonDocument(json).toJson();
 
+	// TODO: Create other way for endline constant, get rid of define
 #define NL "\r\n"
 	QString header = "HTTP/1.0 200 OK" NL
 					 "Connection: close" NL
 					 "Content-type: text/plain, charset=us-ascii" NL
-					 "Content-length: " + QString::number(bytes.size()) + NL
+					 "Content-length: " + QString::number(jsonBytes.size()) + NL
 					 NL;
-
-	mCurrentConnection->write(header.toLatin1());
-	mCurrentConnection->write(bytes);
 #undef NL
 
+	mCurrentConnection->write(header.toLatin1());
+	mCurrentConnection->write(jsonBytes);
 	mCurrentConnection->close();
 }
 
 void TrikVariablesServer::onNewConnection()
 {
+	// TODO: Object from nextPendingConnection is a child of QTcpServer, so it will be automatically
+	// deleted when QTcpServer is destroyed. Maybe it may sense to call "deleteLater" explicitly,
+	// to avoid wasting memory.
 	mCurrentConnection = mTcpServer->nextPendingConnection();
-
-	connect(mCurrentConnection, SIGNAL(readyRead()), this, SLOT(readData()));
-	qDebug() << "new connection";
+	connect(mCurrentConnection, SIGNAL(readyRead()), this, SLOT(processHTTPRequest()));
 }
 
-void TrikVariablesServer::readData()
+void TrikVariablesServer::processHTTPRequest()
 {
-	qDebug() << "new data";
+	// TODO: Make sure, that different connections aren't intersected using mutex or
+	// support multiple connections simultaneously
 	QStringList list;
 	while (mCurrentConnection->canReadLine())
 	{
@@ -53,8 +51,8 @@ void TrikVariablesServer::readData()
 		list.append(data);
 	}
 
-	QString resultString = list.join("").remove(QRegExp("[\\n\\t\\r]"));
-	QStringList words = resultString.split(QRegExp("\\s+"), QString::SkipEmptyParts);
+	const QString cleanString = list.join("").remove(QRegExp("[\\n\\t\\r]"));
+	const QStringList words = cleanString.split(QRegExp("\\s+"), QString::SkipEmptyParts);
 
 	if (words[1] == "/web/") {
 		emit getVariables("web");

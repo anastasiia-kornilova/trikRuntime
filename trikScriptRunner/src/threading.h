@@ -79,9 +79,13 @@ signals:
 	/// Signals that all threads have finished.
 	void finished();
 
-	void variablesReady(const QJsonObject &data);
-
+	/// Emitted when there is a request for variables values
+	/// @param propertyName - name of variables prefix, i.e prefix "web" for variable "web.light"
 	void getVariables(const QString &propertyName);
+
+	/// Emitted when variables values are ready
+	/// @param json - JSON container for variables values
+	void variablesReady(const QJsonObject &data);
 
 private:
 	/// Starts a thread with given threadId
