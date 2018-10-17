@@ -98,11 +98,6 @@ void PythonEngineWorker::stopScript()
 		return;
 	}
 
-	while (mState == starting) {
-		// Some script is starting right now, so we are in inconsistent state. Let it start, then stop it.
-		QThread::yieldCurrentThread();
-	}
-
 	QLOG_INFO() << "PythonEngineWorker: stopping script";
 
 	mState = stopping;
@@ -114,8 +109,6 @@ void PythonEngineWorker::stopScript()
 	QMetaObject::invokeMethod(this, "recreateContext"); /// recreates python module, which we use
 
 	mState = ready;
-
-	/// @todo: is it actually stopped?
 
 	QLOG_INFO() << "PythonEngineWorker: stopping complete";
 }
@@ -133,9 +126,9 @@ void PythonEngineWorker::doRun(const QString &script)
 	/// When starting script execution (by any means), clear button states.
 	mBrick.keys()->reset();
 
+	mState = running;
 	mMainContext.evalScript(script);
 
-	mState = running;
 	QLOG_INFO() << "PythonEngineWorker: evaluation ended";
 	emit completed("", 0);
 }
