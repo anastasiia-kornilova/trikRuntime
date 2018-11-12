@@ -68,6 +68,8 @@ void PythonEngineWorker::stopScript()
 		mMailbox->stopWaiting();
 	}
 
+	/// Very dangerous approach. Looking for a safer one.
+	mScriptThread.terminate();
 
 	mState = ready;
 
