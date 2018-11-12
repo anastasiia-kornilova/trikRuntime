@@ -36,8 +36,6 @@ TrikPythonRunner::TrikPythonRunner(trikControl::BrickInterface &brick
 
 	mWorkerThread.start();
 
-	QMetaObject::invokeMethod(mScriptEngineWorker, "init"); /// create Python main module
-
 	QLOG_INFO() << "Starting TrikPythonRunner worker thread" << &mWorkerThread;
 }
 

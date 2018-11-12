@@ -21,10 +21,7 @@
 #include <trikControl/brickInterface.h>
 #include <trikNetwork/mailboxInterface.h>
 
-#include "PythonQt_QtAll.h"
-#include "PyTrikControl0.h"
-
-void PythonQt_init_PyTrikControl(PyObject* module);
+#include "pythonScriptWorker.h"
 
 namespace trikScriptRunner
 {
@@ -61,6 +58,8 @@ signals:
 	/// @param scriptId - unique identifier assigned to a newly started script.
 	void startedScript(int scriptId);
 
+	void startScript();
+
 public slots:
 	/// Starts script evaluation, emits startedScript() signal and returns. Script will be executed asynchronously.
 	/// completed() signal is emitted upon script abortion or completion.
@@ -77,11 +76,6 @@ public slots:
 	/// Can be safely called from other threads.
 	void runDirect(const QString &command);
 
-	/// Initializes PythonQt and creates new main module, which will be used by user
-	/// Must be invoked (called by the same thread as `run` or `runDirect`)
-	/// Calls initTrik()
-	void init();
-
 	/// Recreates Main Context made by init
 	void recreateContext();
 
@@ -93,14 +87,13 @@ private slots:
 	/// Abort script execution.
 	void onScriptRequestingToQuit();
 
-	/// Adds trik object to main Python context
-	void initTrik();
-
 	/// Actually runs given script. Is to be called from a thread owning PythonEngineWorker.
 	void doRun(const QString &script);
 
 	/// Actually runs given command. Is to be called from a thread owning PythonEngineWorker.
 	void doRunDirect(const QString &command);
+
+	void emitCompleted();
 
 private:
 	/// State of a script
@@ -115,9 +108,6 @@ private:
 		, running
 	};
 
-	/// Evaluates "system.py" file in the current context.
-	void evalSystemPy();
-
 	/// Turns the worker to a starting state, emits startedScript() signal.
 	void startScriptEvaluation(int scriptId);
 
@@ -130,7 +120,7 @@ private:
 	/// behavior when programs are started and stopped actively.
 	QMutex mScriptStateMutex;
 
-	PythonQtObjectPtr mMainContext;
+	QThread mScriptThread;
 };
 
 }

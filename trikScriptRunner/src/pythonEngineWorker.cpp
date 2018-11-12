@@ -29,45 +29,6 @@ PythonEngineWorker::PythonEngineWorker(trikControl::BrickInterface &brick
 	, mState(ready)
 {}
 
-void PythonEngineWorker::init()
-{
-	// init PythonQt
-	PythonQt::init(PythonQt::IgnoreSiteModule);
-	PythonQt_QtAll::init();
-	mMainContext = PythonQt::self()->getMainModule();
-
-	initTrik();
-}
-
-void PythonEngineWorker::recreateContext()
-{
-	// Delete current __main__ and create a new one (hack)
-	mMainContext.evalScript("import sys");
-	mMainContext.evalScript("del sys.modules[__name__]");
-	mMainContext = PythonQt::self()->createModuleFromScript("__main__", "");
-
-	initTrik();
-}
-
-void PythonEngineWorker::evalSystemPy()
-{
-	const QString systemPyPath = trikKernel::Paths::systemScriptsPath() + "system.py";
-
-	if (QFile::exists(systemPyPath)) {
-		mMainContext.evalFile(systemPyPath);
-	} else {
-		QLOG_ERROR() << "system.py not found, path:" << systemPyPath;
-	}
-}
-
-void PythonEngineWorker::initTrik()
-{
-	PythonQt_init_PyTrikControl(mMainContext);
-	mMainContext.addObject("brick", &mBrick);
-
-	evalSystemPy();
-}
-
 void PythonEngineWorker::resetBrick()
 {
 	QLOG_INFO() << "Stopping robot";
@@ -99,11 +60,6 @@ void PythonEngineWorker::stopScript()
 		return;
 	}
 
-	while (mState == starting) {
-		// Some script is starting right now, so we are in inconsistent state. Let it start, then stop it.
-		QThread::yieldCurrentThread();
-	}
-
 	QLOG_INFO() << "PythonEngineWorker: stopping script";
 
 	mState = stopping;
@@ -112,11 +68,8 @@ void PythonEngineWorker::stopScript()
 		mMailbox->stopWaiting();
 	}
 
-	QMetaObject::invokeMethod(this, "recreateContext"); /// recreates python module, which we use
 
 	mState = ready;
-
-	/// @todo: is it actually stopped?
 
 	QLOG_INFO() << "PythonEngineWorker: stopping complete";
 }
@@ -134,11 +87,18 @@ void PythonEngineWorker::doRun(const QString &script)
 	/// When starting script execution (by any means), clear button states.
 	mBrick.keys()->reset();
 
-	mMainContext.evalScript(script);
+	qDebug() << __FUNCTION__ << __LINE__;
+
+	PythonScriptWorker *scriptWorker = new PythonScriptWorker(mBrick, script);
+	scriptWorker->moveToThread(&mScriptThread);
+	connect(&mScriptThread, SIGNAL(finished()), scriptWorker, SLOT(deleteLater()));
+	connect(scriptWorker, SIGNAL(finished()), this, SLOT(emitCompleted()));
+	connect(this, SIGNAL(startScript()), scriptWorker, SLOT(evalScript()));
+	mScriptThread.start();
+	emit startScript();
 
 	mState = running;
 	QLOG_INFO() << "PythonEngineWorker: evaluation ended";
-	emit completed("", 0);
 }
 
 void PythonEngineWorker::runDirect(const QString &command)
@@ -151,11 +111,12 @@ void PythonEngineWorker::runDirect(const QString &command)
 
 void PythonEngineWorker::doRunDirect(const QString &command)
 {
-	if (PythonQt::self()->hadError()) {
-		PythonQt::self()->clearError();
-		recreateContext();
-	}
-	mMainContext.evalScript(command);
+	throw "Not implemented";
+}
+
+void PythonEngineWorker::emitCompleted()
+{
+	emit completed("", 0);
 }
 
 void PythonEngineWorker::onScriptRequestingToQuit()
