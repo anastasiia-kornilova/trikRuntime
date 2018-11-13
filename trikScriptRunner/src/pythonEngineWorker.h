@@ -60,6 +60,8 @@ signals:
 
 	void startScript();
 
+	void stop();
+
 public slots:
 	/// Starts script evaluation, emits startedScript() signal and returns. Script will be executed asynchronously.
 	/// completed() signal is emitted upon script abortion or completion.
@@ -75,9 +77,6 @@ public slots:
 	/// In this mode, threads and messages are unsupported.
 	/// Can be safely called from other threads.
 	void runDirect(const QString &command);
-
-	/// Recreates Main Context made by init
-	void recreateContext();
 
 	/// Plays "beep" sound.
 	/// Can be safely called from other threads.

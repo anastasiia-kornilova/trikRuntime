@@ -20,6 +20,8 @@ public:
 public slots:
 	void evalScript();
 
+	void stopScript();
+
 signals:
 	void finished();
 

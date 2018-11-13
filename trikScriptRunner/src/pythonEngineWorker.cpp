@@ -50,6 +50,7 @@ void PythonEngineWorker::stopScript()
 {
 	QMutexLocker locker(&mScriptStateMutex);
 
+	qDebug() << mState;
 	if (mState == stopping) {
 		// Already stopping, so we can do nothing.
 		return;
@@ -68,8 +69,14 @@ void PythonEngineWorker::stopScript()
 		mMailbox->stopWaiting();
 	}
 
+	emit stop();
+
 	/// Very dangerous approach. Looking for a safer one.
-	mScriptThread.terminate();
+	qDebug() << __FUNCTION__ << __LINE__;
+//	mScriptThread.quit();
+	qDebug() << __FUNCTION__ << __LINE__;
+//	mScriptThread.wait();
+	qDebug() << __FUNCTION__ << __LINE__;
 
 	mState = ready;
 
@@ -96,6 +103,7 @@ void PythonEngineWorker::doRun(const QString &script)
 	connect(&mScriptThread, SIGNAL(finished()), scriptWorker, SLOT(deleteLater()));
 	connect(scriptWorker, SIGNAL(finished()), this, SLOT(emitCompleted()));
 	connect(this, SIGNAL(startScript()), scriptWorker, SLOT(evalScript()));
+	connect(this, SIGNAL(stop()), scriptWorker, SLOT(stopScript()));
 	mScriptThread.start();
 	emit startScript();
 

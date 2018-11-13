@@ -22,6 +22,12 @@ void trikScriptRunner::PythonScriptWorker::evalScript()
 	emit finished();
 }
 
+void PythonScriptWorker::stopScript()
+{
+	mMainContext.evalScript("script.setVar(False)");
+	emit finished();
+}
+
 void PythonScriptWorker::initPythonQt()
 {
 	PythonQt::init(PythonQt::IgnoreSiteModule);
