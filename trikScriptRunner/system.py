@@ -16,7 +16,7 @@ class script(object):
         self.waitLoop = QtCore.QEventLoop()
         self.quitTimer.connect("timeout()", self.waitLoop.quit)
         self.waitTimer.connect("timeout()", self.quitTimer.start)
-        self.var = True
+        self.interruption_flag = False
 
     def __del__(self):
         for filename in self.files:
@@ -66,7 +66,7 @@ class script(object):
           self.waitTimer.setInterval(ms)
           self.waitTimer.start()
           self.waitLoop.exec()
-          if self.var == False:
+          if self.interruption_flag:
               raise ValueError()
 
     def writeToFile(self, filename, text):
@@ -74,7 +74,7 @@ class script(object):
             self.files[filename] = open(filename, 'w+')
         self.files[filename].write(text)
 
-    def setVar(self, val):
-        self.var = val
+    def killScript(self):
+        self.interruption_flag = True
 
 script = script()  # singleton

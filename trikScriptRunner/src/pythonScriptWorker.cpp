@@ -16,16 +16,13 @@ void trikScriptRunner::PythonScriptWorker::evalScript()
 	initPythonQt();
 	initTrik();
 
-	qDebug() << "here";
-
 	mMainContext.evalScript(mScript);
 	emit finished();
 }
 
 void PythonScriptWorker::stopScript()
 {
-	mMainContext.evalScript("script.setVar(False)");
-	emit finished();
+	mMainContext.evalScript("script.killScript()");
 }
 
 void PythonScriptWorker::initPythonQt()

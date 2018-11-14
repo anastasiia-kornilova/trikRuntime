@@ -50,10 +50,9 @@ void PythonEngineWorker::stopScript()
 {
 	QMutexLocker locker(&mScriptStateMutex);
 
-	qDebug() << mState;
 	if (mState == stopping) {
 		// Already stopping, so we can do nothing.
-		return;
+			return;
 	}
 
 	if (mState == ready) {
@@ -70,17 +69,6 @@ void PythonEngineWorker::stopScript()
 	}
 
 	emit stop();
-
-	/// Very dangerous approach. Looking for a safer one.
-	qDebug() << __FUNCTION__ << __LINE__;
-//	mScriptThread.quit();
-	qDebug() << __FUNCTION__ << __LINE__;
-//	mScriptThread.wait();
-	qDebug() << __FUNCTION__ << __LINE__;
-
-	mState = ready;
-
-	QLOG_INFO() << "PythonEngineWorker: stopping complete";
 }
 
 void PythonEngineWorker::run(const QString &script)
@@ -96,25 +84,25 @@ void PythonEngineWorker::doRun(const QString &script)
 	/// When starting script execution (by any means), clear button states.
 	mBrick.keys()->reset();
 
-	qDebug() << __FUNCTION__ << __LINE__;
-
 	PythonScriptWorker *scriptWorker = new PythonScriptWorker(mBrick, script);
 	scriptWorker->moveToThread(&mScriptThread);
+
+	/// Delete worker in case of script or thread is finished
 	connect(&mScriptThread, SIGNAL(finished()), scriptWorker, SLOT(deleteLater()));
-	connect(scriptWorker, SIGNAL(finished()), this, SLOT(emitCompleted()));
+	connect(scriptWorker, SIGNAL(finished()), scriptWorker, SLOT(deleteLater()));
+
 	connect(this, SIGNAL(startScript()), scriptWorker, SLOT(evalScript()));
 	connect(this, SIGNAL(stop()), scriptWorker, SLOT(stopScript()));
+	connect(scriptWorker, SIGNAL(finished()), this, SLOT(complete()));
+
 	mScriptThread.start();
 	emit startScript();
 
 	mState = running;
-	QLOG_INFO() << "PythonEngineWorker: evaluation ended";
 }
 
 void PythonEngineWorker::runDirect(const QString &command)
 {
-	qDebug() << "PythonEngineWorker::runDirect";
-
 	QMutexLocker locker(&mScriptStateMutex);
 	QMetaObject::invokeMethod(this, "doRunDirect", Q_ARG(const QString &, command));
 }
@@ -124,8 +112,9 @@ void PythonEngineWorker::doRunDirect(const QString &command)
 	throw "Not implemented";
 }
 
-void PythonEngineWorker::emitCompleted()
+void PythonEngineWorker::complete()
 {
+	mState = ready;
 	emit completed("", 0);
 }
 

@@ -58,8 +58,10 @@ signals:
 	/// @param scriptId - unique identifier assigned to a newly started script.
 	void startedScript(int scriptId);
 
+	/// Emitted to invoke script evalution in PythonScriptWorker.
 	void startScript();
 
+	/// Emitted to stop script evaluation in PythonScriptWorker.
 	void stop();
 
 public slots:
@@ -83,6 +85,7 @@ public slots:
 	void brickBeep();
 
 private slots:
+
 	/// Abort script execution.
 	void onScriptRequestingToQuit();
 
@@ -92,7 +95,8 @@ private slots:
 	/// Actually runs given command. Is to be called from a thread owning PythonEngineWorker.
 	void doRunDirect(const QString &command);
 
-	void emitCompleted();
+	/// Set up state to ready and emit completed signal.
+	void complete();
 
 private:
 	/// State of a script
