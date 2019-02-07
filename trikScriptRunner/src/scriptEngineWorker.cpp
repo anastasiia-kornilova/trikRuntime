@@ -128,6 +128,9 @@ QScriptValue print(QScriptContext *context, QScriptEngine *engine)
 		};
 		QScriptValue argument = context->argument(i);
 		result.append(prettyPrinter(argument.toVariant()));
+		if (i != argumentCount) {
+			result.append(",");
+		}
 	}
 
 	QTextStream(stdout) << result << "\n";
