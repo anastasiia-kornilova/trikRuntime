@@ -135,19 +135,29 @@ void FileManagerWidget::remove()
 {
 	const QModelIndex &index = mFileSystemView.currentIndex();
 	if (!mFileSystemModel.isDir(index)) {
-		QMessageBox::StandardButton reply = QMessageBox::warning(this, tr("Confirm deletion")
-				, tr("Are you sure you want to delete file?"), QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
-		if (reply == QMessageBox::Yes) {
-			mFileSystemModel.remove(index);
+		QMessageBox confirmMessageBox(QMessageBox::NoIcon, tr("Confirm deletion")
+				, tr("Are you sure you want to delete file?"));
+		confirmMessageBox.setStandardButtons(0);
+		confirmMessageBox.addButton(new QPushButton(tr("Yes")), QMessageBox::ButtonRole::AcceptRole);
+		confirmMessageBox.addButton(new QPushButton(tr("No")), QMessageBox::ButtonRole::RejectRole);
+
+		const auto res = confirmMessageBox.exec();
+		if (res == QDialog::Accepted) {
+			mFileSystemModel.remove(mFilterProxyModel.mapToSource(index));
 		}
 	}
 }
 
 void FileManagerWidget::removeAll()
 {
-	QMessageBox::StandardButton reply = QMessageBox::warning(this, tr("Confirm deletion")
-			, tr("Are you sure you want to delete all files?"), QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
-	if (reply == QMessageBox::Yes) {
+	QMessageBox confirmMessageBox(QMessageBox::NoIcon, tr("Confirm deletion")
+			, tr("Are you sure you want to delete file?"));
+	confirmMessageBox.setStandardButtons(0);
+	confirmMessageBox.addButton(new QPushButton(tr("Yes")), QMessageBox::ButtonRole::AcceptRole);
+	confirmMessageBox.addButton(new QPushButton(tr("No")), QMessageBox::ButtonRole::RejectRole);
+
+	const auto res = confirmMessageBox.exec();
+	if (res == QDialog::Accepted) {
 		QDir dir(trikKernel::Paths::userScriptsPath());
 		dir.setNameFilters({"*.js", "*.py"});
 		dir.setFilter(QDir::Files);
